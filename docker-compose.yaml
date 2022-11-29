@@ -1,0 +1,56 @@
+version: "3"
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        HOST: http://localhost:3001
+    ports:
+      - "80:80"
+    container_name: frontend
+    depends_on:
+      - backend
+
+  backend:
+    platform: linux/x86_64
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      MYSQL_HOST: mysql_db
+      JWT_SECRET_TOKEN: k4sbw-5EWAdfm1RgTTHsJOcsB2wCpOIYDnv39GdhBA6zRGRwbjSizBBed6j5rmIh
+      CORS_ORIGIN_REGEX: http([s])?:\/\/localhost
+    depends_on:
+      - mysql_db
+
+  mysql_db:
+    platform: linux/x86_64
+    image: mysql:5.7
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8 --collation-server=utf8_general_ci
+    environment:
+      MYSQL_DATABASE: tradeoffer_db
+      MYSQL_ROOT_PASSWORD: root
+    healthcheck:
+      test: mysql ${MYSQL_DATABASE} --user=root --password=root --silent --execute "SELECT 1;"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "3305:3306"
+    volumes:
+      - mysql_db_data:/var/lib/mysql
+    restart: always
+
+  adminer:
+    image: adminer:4.8.1
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql_db
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql_db
+
+volumes:
+  mysql_db_data:
